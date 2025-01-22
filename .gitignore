@@ -2,3 +2,7 @@
 __pycache__/
 *.pyc
 *.pyo
+
+# input and output folder
+uploads
+converted
