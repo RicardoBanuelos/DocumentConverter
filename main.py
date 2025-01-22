@@ -1,8 +1,9 @@
 import os
-from fastapi import FastAPI, File, UploadFile, HTTPException
-
 import shutil
 from uuid import uuid4
+
+from fastapi import FastAPI, File, UploadFile, HTTPException
+from fastapi.responses import FileResponse
 
 app = FastAPI()
 
@@ -36,4 +37,22 @@ async def upload_file(file: UploadFile = File(...)):
         "file_id" : file_id,
         "filename" : file.filename
     }
+
+@app.get("/download")
+async def download_file(file_id: str):
+    converted_files = os.listdir(CONVERTED_FOLDER)
+
+    file_name = None
+
+    for file in converted_files:
+        if file.startswith(file_id):
+            file_name = file
+            break
+
+    if file_name is None:
+        raise HTTPException(status_code=404, detail="File not found")
+    
+    file_path = os.path.join(CONVERTED_FOLDER, file_name)
+    return FileResponse(file_path, media_type="application/octet-stream", filename=file_name)
+
 
