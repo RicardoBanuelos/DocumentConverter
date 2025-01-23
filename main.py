@@ -63,7 +63,7 @@ async def upload_file(file: UploadFile = File(...)):
 
 @app.get("/convert_docx_to_pdf")
 async def convert_docx_to_pdf(filename: str):
-    file_path = os.path.join(UPLOAD_FOLDER,filename)
+    file_path = os.path.join(UPLOAD_FOLDER, filename)
 
     validate_file_exists(file_path)
     
@@ -81,6 +81,28 @@ async def convert_docx_to_pdf(filename: str):
         "filename" : output_filename
     }
 
+@app.get("/convert_xlsx_to_csv")
+async def convert_xlsx_to_csv(filename: str):
+    file_path = os.path.join(UPLOAD_FOLDER, filename)
+
+    validate_file_exists(file_path)
+
+    TARGET_FORMAT = ".csv"
+
+    file_extension = get_file_extension(filename)
+    validate_conversion(file_extension, TARGET_FORMAT)
+
+    output_folder = str(uuid4())
+    output_path = os.path.join(CONVERTED_FOLDER, output_folder)
+
+    os.makedirs(output_path, exist_ok=True)
+
+    xlsx_to_csv(file_path, output_path)
+
+    return {
+        "folder_name": output_folder
+    }
+
 @app.get("/download")
 async def download_file(filename: str):
     file_path = os.path.join(CONVERTED_FOLDER, filename)
@@ -90,5 +112,5 @@ async def download_file(filename: str):
     
     return FileResponse(file_path, media_type="application/octet-stream", filename=filename)
 
-
-
+if __name__ == "__main__":
+    uvicorn.run(app, host="0.0.0.0", port=8000)
