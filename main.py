@@ -2,6 +2,7 @@ import os
 import shutil
 from uuid import uuid4
 
+import uvicorn
 from fastapi import FastAPI, File, UploadFile, HTTPException
 from fastapi.responses import FileResponse
 
@@ -62,7 +63,7 @@ async def upload_file(file: UploadFile = File(...)):
 
 @app.get("/convert_docx_to_pdf")
 async def convert_docx_to_pdf(filename: str):
-    file_path = os.path.join(filename)
+    file_path = os.path.join(UPLOAD_FOLDER,filename)
 
     validate_file_exists(file_path)
     
@@ -88,5 +89,6 @@ async def download_file(filename: str):
         raise HTTPException(status_code=404, detail="File not found")
     
     return FileResponse(file_path, media_type="application/octet-stream", filename=filename)
+
 
 
