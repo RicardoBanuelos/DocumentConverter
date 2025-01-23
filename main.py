@@ -103,7 +103,7 @@ async def convert_xlsx_to_csv(filename: str):
         "folder_name": output_folder
     }
 
-@app.get("/download")
+@app.get("/download/file")
 async def download_file(filename: str):
     file_path = os.path.join(CONVERTED_FOLDER, filename)
 
@@ -111,6 +111,18 @@ async def download_file(filename: str):
         raise HTTPException(status_code=404, detail="File not found")
     
     return FileResponse(file_path, media_type="application/octet-stream", filename=filename)
+
+@app.get("/download/folder")
+async def download_file(folder_name: str):
+    folder_path = os.path.join(CONVERTED_FOLDER, folder_name)
+
+    if not os.path.exists(folder_path):
+        raise HTTPException(status_code=404, detail="Folder not found")
+    
+    output_path = os.path.join(CONVERTED_FOLDER, folder_name)
+    zip_path = shutil.make_archive(output_path, "zip", folder_path)
+    
+    return FileResponse(zip_path, media_type="application/octet-stream", filename=f"{folder_name}.zip")
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8000)
