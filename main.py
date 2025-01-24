@@ -35,7 +35,7 @@ def validate_file(filename: str) -> bool:
     if get_file_extension(filename) not in ALLOWED_EXTENSIONS:
         raise HTTPException(status_code=400, detail="Invalid file type")
 
-def validate_file_exists(file_path) -> bool: 
+def validate_path_exists(file_path) -> bool: 
     if not os.path.exists(file_path):
         raise HTTPException(status_code=404, detail="File not found")
 
@@ -45,6 +45,12 @@ def validate_conversion(initial_format: str, target_format: str):
     
     if target_format not in supported_conversion_dict[initial_format]:
         raise HTTPException(status_code=400, detail="Unsupported conversion type")
+    
+def zip_files(folder_path: str, output_path: str):
+    
+    validate_path_exists(folder_path)
+    zip_path = shutil.make_archive(output_path, "zip", folder_path)
+
 
 @app.post("/upload")
 async def upload_file(file: UploadFile = File(...)):
@@ -65,7 +71,7 @@ async def upload_file(file: UploadFile = File(...)):
 async def convert_docx_to_pdf(filename: str):
     file_path = os.path.join(UPLOAD_FOLDER, filename)
 
-    validate_file_exists(file_path)
+    validate_path_exists(file_path)
     
     TARGET_FORMAT = ".pdf"
 
@@ -85,7 +91,7 @@ async def convert_docx_to_pdf(filename: str):
 async def convert_xlsx_to_csv(filename: str):
     file_path = os.path.join(UPLOAD_FOLDER, filename)
 
-    validate_file_exists(file_path)
+    validate_path_exists(file_path)
 
     TARGET_FORMAT = ".csv"
 
@@ -99,30 +105,20 @@ async def convert_xlsx_to_csv(filename: str):
 
     xlsx_to_csv(file_path, output_path)
 
+    output_filename = str(uuid4())
+    zip_files(output_path, f"{CONVERTED_FOLDER}/{output_filename}")
+
     return {
-        "folder_name": output_folder
+        "filename": f"{output_filename}.zip"
     }
 
 @app.get("/download/file")
 async def download_file(filename: str):
     file_path = os.path.join(CONVERTED_FOLDER, filename)
 
-    if not os.path.exists(file_path):
-        raise HTTPException(status_code=404, detail="File not found")
+    validate_path_exists(file_path)
     
     return FileResponse(file_path, media_type="application/octet-stream", filename=filename)
-
-@app.get("/download/folder")
-async def download_file(folder_name: str):
-    folder_path = os.path.join(CONVERTED_FOLDER, folder_name)
-
-    if not os.path.exists(folder_path):
-        raise HTTPException(status_code=404, detail="Folder not found")
-    
-    output_path = os.path.join(CONVERTED_FOLDER, folder_name)
-    zip_path = shutil.make_archive(output_path, "zip", folder_path)
-    
-    return FileResponse(zip_path, media_type="application/octet-stream", filename=f"{folder_name}.zip")
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8000)
